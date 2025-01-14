@@ -15,10 +15,9 @@ import type {
 
 import type gas from '@web3-onboard/gas'
 import type unstoppableResolution from '@web3-onboard/unstoppable-resolution'
-import type { TransactionPreviewAPI } from '@web3-onboard/transaction-preview'
 
 import type en from './i18n/en.json'
-import type { EthereumTransactionData, Network } from 'bnc-sdk'
+import type { Network } from 'bnc-sdk'
 import type { GetEnsTextReturnType } from 'viem'
 import type { Config, Connector, WagmiModuleAPI } from '@web3-onboard/wagmi'
 import type wagmi from '@web3-onboard/wagmi'
@@ -50,8 +49,8 @@ export interface InitOptions {
    */
   accountCenter?: AccountCenterOptions
   /**
-   * Opt in to Blocknative value add services (transaction updates) by providing
-   * your Blocknative API key, head to https://explorer.blocknative.com/account
+   * @deprecated apiKey parameter has been deprecated and is no
+   * longer used within Web3-Onboard to provide notifications
    */
   apiKey?: string
   /**
@@ -71,9 +70,12 @@ export interface InitOptions {
    */
   containerElements?: Partial<ContainerElements>
   /**
-   * Transaction Preview module
+   * @deprecated Transaction Preview support has ended and Transaction Preview
+   * is no longer supported as part of Web3-Onboard.
+   * Please remove from your onboard config to avoid
+   * console errors and un-expected behavior
    */
-  transactionPreview?: TransactionPreviewAPI
+  transactionPreview?: unknown
   /**
    * Custom or predefined theme for Web3Onboard
    * BuiltInThemes: ['default', 'dark', 'light', 'system']
@@ -200,11 +202,15 @@ export type Configuration = {
   device: Device | DeviceNotBrowser
   initialWalletInit: WalletInit[]
   appMetadata?: AppMetadata | null
+  /**
+   * @deprecated APIKey parameter has been deprecated and is no
+   * longer used within Web3-Onboard
+   */
   apiKey?: string
   gas?: typeof gas
   wagmi?: WagmiModuleAPI
   containerElements?: ContainerElements
-  transactionPreview?: TransactionPreviewAPI
+  transactionPreview?: unknown
   unstoppableResolution?: typeof unstoppableResolution
 }
 
@@ -365,18 +371,8 @@ export type Notify = {
    */
   enabled: boolean
   /**
-   * Callback that receives all transaction events
-   * Return a custom notification based on the event
-   * Or return false to disable notification for this event
-   * Or return undefined for a default notification
-   */
-  transactionHandler: (
-    event: EthereumTransactionData
-  ) => TransactionHandlerReturn
-  /**
    * Position of notifications that defaults to the same position as the
    * Account Center (if enabled) of the top right if AC is disabled
-   * and notifications are enabled (enabled by default with API key)
    */
   position?: NotificationPosition
   replacement?: {
@@ -445,15 +441,6 @@ export interface UpdateNotification {
     dismiss: () => void
     update: UpdateNotification
   }
-}
-
-export interface PreflightNotificationsOptions {
-  sendTransaction?: () => Promise<string | void>
-  estimateGas?: () => Promise<string>
-  gasPrice?: () => Promise<string>
-  balance?: string | number
-  txDetails?: TxDetails
-  txApproveReminderTimeout?: number
 }
 
 export interface TxDetails {
