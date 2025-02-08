@@ -2,7 +2,7 @@ import connectWallet from './connect.js'
 import disconnectWallet from './disconnect.js'
 import setChain from './chain.js'
 import { state } from './store/index.js'
-import { reset$, wallets$ } from './streams.js'
+import { reset$ } from './streams.js'
 import initI18N from './i18n/index.js'
 import App from './views/Index.svelte'
 import type {
@@ -15,7 +15,6 @@ import { APP_INITIAL_STATE, STORAGE_KEYS } from './constants.js'
 import { configuration, updateConfiguration } from './configuration.js'
 import updateBalances from './update-balances.js'
 import { chainIdToHex, getLocalStore, setLocalStore } from './utils.js'
-import { preflightNotifications } from './preflight-notifications.js'
 
 import {
   validateInitOptions,
@@ -34,11 +33,8 @@ import {
   updateConnectModal,
   updateTheme,
   updateAppMetadata,
-  updateChain,
-  updateWallet
+  updateChain
 } from './store/actions.js'
-import type { PatchedEIP1193Provider } from '@web3-onboard/transaction-preview'
-import { getBlocknativeSdk } from './services.js'
 import type { WagmiModuleAPI } from '@web3-onboard/wagmi'
 import { wagmiProviderMethods } from './provider'
 
@@ -54,7 +50,6 @@ const API = {
       setLocale,
       updateNotify,
       customNotification,
-      preflightNotifications,
       updateBalances,
       updateAccountCenter,
       setPrimaryWallet,
@@ -78,7 +73,6 @@ export type {
   Notification,
   Notify,
   UpdateNotification,
-  PreflightNotificationsOptions,
   Theme,
   WagmiConfig
 } from './types.js'
@@ -102,7 +96,6 @@ function init(options: InitOptions): OnboardAPI {
     appMetadata,
     i18n,
     accountCenter,
-    apiKey,
     notify,
     gas,
     connect,
@@ -169,6 +162,9 @@ function init(options: InitOptions): OnboardAPI {
 
   // update notify
   if (typeof notify !== 'undefined') {
+    console.warn(
+      `Support for notifications on transaction state changes have been deprecated. Custom notifications can still be sent ot the user.`
+    )
     if ('desktop' in notify || 'mobile' in notify) {
       const error = validateNotifyOptions(notify)
 
@@ -238,35 +234,18 @@ function init(options: InitOptions): OnboardAPI {
 
   updateConfiguration({
     svelteInstance: app,
-    apiKey,
     initialWalletInit: wallets,
     gas,
-    transactionPreview,
     unstoppableResolution,
     wagmi: wagmiApi
   })
 
   appMetadata && updateAppMetadata(appMetadata)
 
-  if (apiKey && transactionPreview) {
-    console.warn(
-      'Transaction Preview support is going to be sunset on July 1st 2024 and will no longer work after that date'
+  if (transactionPreview) {
+    console.error(
+      'Transaction Preview support has been removed and is no longer supported within Web3-Onboard'
     )
-    const getBnSDK = async () => {
-      const sdk = await getBlocknativeSdk()
-      if (!sdk) return
-      transactionPreview.init({
-        containerElement: '#w3o-transaction-preview-container',
-        sdk,
-        apiKey
-      })
-      wallets$.subscribe(wallets => {
-        wallets.forEach(({ provider }) => {
-          transactionPreview.patchProvider(provider as PatchedEIP1193Provider)
-        })
-      })
-    }
-    getBnSDK()
   }
 
   theme && updateTheme(theme)
@@ -289,6 +268,12 @@ function init(options: InitOptions): OnboardAPI {
         lastConnectedWalletsParsed.length
       ) {
         connectAllPreviousWallets(lastConnectedWalletsParsed, connect)
+      }
+      if (
+        lastConnectedWalletsParsed &&
+        typeof lastConnectedWalletsParsed === 'string'
+      ) {
+        connectAllPreviousWallets([lastConnectedWalletsParsed], connect)
       }
     } catch (err) {
       // Handle for legacy single wallet approach
@@ -361,6 +346,7 @@ const connectAllPreviousWallets = async (
       }
     }
   }
+
   setLocalStore(
     STORAGE_KEYS.LAST_CONNECTED_WALLET,
     JSON.stringify(activeWalletsList)

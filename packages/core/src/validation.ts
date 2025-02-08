@@ -20,13 +20,11 @@ import type {
   DisconnectOptions,
   ConnectOptionsString,
   AccountCenter,
-  TransactionHandlerReturn,
   NotifyOptions,
   Notification,
   CustomNotification,
   CustomNotificationUpdate,
   Notify,
-  PreflightNotificationsOptions,
   ConnectModalOptions,
   Theme
 } from './types.js'
@@ -163,7 +161,7 @@ const commonPositions = Joi.string().valid(
 const gasPriceProbabilities = [70, 80, 90, 95, 99]
 
 const notify = Joi.object({
-  transactionHandler: Joi.function(),
+  transactionHandler: Joi.function().optional(),
   enabled: Joi.boolean(),
   position: commonPositions,
   replacement: Joi.object({
@@ -249,11 +247,10 @@ const initOptions = Joi.object({
   wagmi: Joi.function(),
   connect: connectModalOptions,
   containerElements: containerElements,
-  transactionPreview: Joi.object({
-    patchProvider: Joi.function().required(),
-    init: Joi.function().required(),
-    previewTransaction: Joi.function()
-  }),
+  // transactionPreview is deprecated but is still allowed to 
+  // avoid breaking dapps a console error is shown although 
+  // transactionPreview functionality has been removed
+  transactionPreview: Joi.any(),
   theme: theme,
   disableFontDownload: Joi.boolean(),
   unstoppableResolution: Joi.function()
@@ -337,11 +334,6 @@ const notification = Joi.object({
   link: Joi.string()
 })
 
-const transactionHandlerReturn = Joi.any().allow(
-  customNotificationUpdate,
-  Joi.boolean().allow(false)
-)
-
 export function validateWallet(
   data: WalletState | Partial<WalletState>
 ): ValidateReturn {
@@ -418,19 +410,8 @@ export function validateNotifyOptions(
   return validate(notifyOptions, data)
 }
 
-export function validateTransactionHandlerReturn(
-  data: TransactionHandlerReturn
-): ValidateReturn {
-  return validate(transactionHandlerReturn, data)
-}
-
 export function validateNotification(data: Notification): ValidateReturn {
   return validate(notification, data)
-}
-export function validatePreflightNotifications(
-  data: PreflightNotificationsOptions
-): ValidateReturn {
-  return validate(preflightNotifications, data)
 }
 
 export function validateCustomNotificationUpdate(

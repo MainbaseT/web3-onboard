@@ -29,18 +29,21 @@
   import uauthModule from '@web3-onboard/uauth'
   import phantomModule from '@web3-onboard/phantom'
   import trustModule from '@web3-onboard/trust'
+  import okxModule from '@web3-onboard/okx'
   import frontierModule from '@web3-onboard/frontier'
   import bloctoModule from '@web3-onboard/blocto'
   import cedeStoreModule from '@web3-onboard/cede-store'
   import arcanaAuthModule from '@web3-onboard/arcana-auth'
   import venlyModule from '@web3-onboard/venly'
   import bitgetModule from '@web3-onboard/bitget'
+  import bloomModule from '@web3-onboard/bloom'
   import particleAuthModule from '@web3-onboard/particle-network'
-  // import capsuleModule, {
-  //   Environment,
-  //   OAuthMethod,
-  //   Theme
-  // } from '@web3-onboard/capsule'
+  import finoaConnectModule from '@web3-onboard/finoaconnect'
+  import keplrModule from '@web3-onboard/keplr'
+  import capsuleModule, {
+    Environment as CapsuleEnvironment,
+    OAuthMethod as CapsuleOAuthMethods
+  } from '@web3-onboard/capsule'
   import {
     recoverAddress,
     arrayify,
@@ -50,7 +53,7 @@
   import { ethers } from 'ethers'
   import { share } from 'rxjs/operators'
   import VConsole from 'vconsole'
-  import blocknativeIcon from './blocknative-icon.js'
+  import thirdwebIcon from './thirdweb-icon.js'
   import DappAuth from '@blocto/dappauth'
   import {
     sendTransaction as wagmiSendTransaction,
@@ -62,6 +65,8 @@
   } from '@web3-onboard/wagmi'
   import { parseEther, isHex, fromHex } from 'viem'
   import passportModule, { Network } from '@web3-onboard/passport'
+  import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider'
+  import { CHAIN_NAMESPACES } from '@web3auth/base'
   import { WebauthnSigner } from '@0xpass/webauthn-signer'
 
   if (window.innerWidth < 700) {
@@ -101,7 +106,8 @@
     displayUnavailable: [
       ProviderLabel.MetaMask,
       ProviderLabel.Trust,
-      ProviderLabel.Phantom
+      ProviderLabel.Phantom,
+      ProviderLabel.OKXWallet
     ]
     // but only show Binance and Bitski wallet if they are available
     // filter: {
@@ -164,9 +170,27 @@
     apiKey: 'pk_test_886ADCAB855632AA'
   })
 
+  const privateKeyProvider = new EthereumPrivateKeyProvider({
+    config: {
+      chainConfig: {
+        chainId: `0xAA36A7`,
+        rpcTarget: `https://rpc.sepolia.org/`,
+        chainNamespace: CHAIN_NAMESPACES.EIP155,
+        displayName: 'Sepolia',
+        blockExplorerUrl: 'https://sepolia.etherscan.io',
+        ticker: 'ETH',
+        tickerName: 'Ether',
+        logo: 'https://images.toruswallet.io/ethereum.svg'
+      }
+    }
+  })
+
+  // must access via http://localhost:8080 to be whitelisted
   const web3auth = web3authModule({
     clientId:
-      'DJuUOKvmNnlzy6ruVgeWYWIMKLRyYtjYa9Y10VCeJzWZcygDlrYLyXsBQjpJ2hxlBO9dnl8t9GmAC2qOP5vnIGo'
+      'BErDmyuxFPtpvM_Isiy8RHNWOWYvkAUehrgmO0rDoe5yr33ixt5s98eT_qePTyRsgpN7SVQwrEUMx7gON0jBDQI',
+    privateKeyProvider: privateKeyProvider,
+    web3AuthNetwork: 'sapphire_devnet'
   })
 
   const arcanaAuth = arcanaAuthModule({
@@ -183,10 +207,15 @@
   const zeal = zealModule()
   const phantom = phantomModule()
   const trust = trustModule()
+  const okx = okxModule()
   const frontier = frontierModule()
   const cedeStore = cedeStoreModule()
   const blocto = bloctoModule()
   const tallyho = tallyHoModule()
+  const bloom = bloomModule({
+    projectId: 'f6bd6e2911b56f5ac3bc8b2d0e2d7ad5',
+    dappUrl: 'https://www.onboard.blocknative.com'
+  })
 
   const webauthnSigner = new WebauthnSigner({
     rpId: 'localhost',
@@ -200,6 +229,7 @@
     fallbackProvider: '' // insert your alchemy / infura url here
     // encryptionSecret: '' // encryption secret is optional, but advised to securely store values in browser storage
   })
+  const finoaConnect = finoaConnectModule()
 
   const trezorOptions = {
     email: 'test@test.com',
@@ -230,6 +260,7 @@
     clientKey: 'cSTLqhvONB5j588Wz6E5WJLMPrHeUlGbymf1DFhO',
     appId: 'b1f0239a-edb0-41f9-b0f5-ab780bb02a9e'
   })
+  const keplr = keplrModule()
 
   const dcent = dcentModule()
   const bitget = bitgetModule()
@@ -244,23 +275,22 @@
     clientId: 'blocknative',
     environment: 'staging'
   })
-  // const capsule = capsuleModule({
-  //   environment: Environment.DEVELOPMENT,
-  //   apiKey: '992bbd9146d5de8ad0419f141d9a7ca7',
-  //   modalProps: {
-  //     oAuthMethods: [OAuthMethod.GOOGLE, OAuthMethod.TWITTER],
-  //     theme: Theme.dark
-  //   },
-  //   constructorOpts: {
-  //     portalBackgroundColor: '#5e5656',
-  //     portalPrimaryButtonColor: '#ff6700',
-  //     portalTextColor: '#ffffff'
-  //   }
-  // })
+  const capsule = capsuleModule({
+    environment: CapsuleEnvironment.DEVELOPMENT,
+    apiKey: '992bbd9146d5de8ad0419f141d9a7ca7',
+    modalProps: {
+      appName: 'Capsule',
+      disableEmailLogin: false,
+      disablePhoneLogin: false,
+      oAuthMethods: Object.values(CapsuleOAuthMethods)
+    },
+
+    walletLabel: 'Capsule'
+  })
 
   const onboard = Onboard({
     wallets: [
-      // metamaskSDKWallet,
+      metamaskSDKWallet,
       coinbaseWallet,
       injected,
       ledger,
@@ -269,8 +299,10 @@
       phantom,
       safe,
       trust,
+      okx,
       tallyho,
       bitget,
+      bloom,
       enkrypt,
       infinityWallet,
       mewWallet,
@@ -284,7 +316,7 @@
       sequence,
       uauth,
       web3auth,
-      // capsule,
+      capsule,
       zeal,
       frontier,
       xdefi,
@@ -294,7 +326,9 @@
       blocto,
       venly,
       particle,
-      passport
+      passport,
+      finoaConnect,
+      keplr
     ],
     transactionPreview,
     gas,
@@ -393,11 +427,12 @@
     connect: {
       // disableClose: true,
       // removeWhereIsMyWalletWarning: true,
-      autoConnectAllPreviousWallet: true
+      // autoConnectLastWallet: false,
+      autoConnectAllPreviousWallet: true,
     },
     appMetadata: {
       name: 'Blocknative',
-      icon: blocknativeIcon,
+      icon: thirdwebIcon,
       // logo: blocknativeLogo,
       description: 'Demo app for Onboard V2',
       recommendedInjectedWallets: [
@@ -432,22 +467,6 @@
     notify: {
       desktop: {
         enabled: true,
-        transactionHandler: transaction => {
-          console.log({ transaction })
-          if (transaction.eventCode === 'txConfirmed') {
-            return {
-              autoDismiss: 0
-            }
-          }
-          // if (transaction.eventCode === 'txPool') {
-          //   return {
-          //     type: 'hint',
-          //     message: 'Your in the pool, hope you brought a towel!',
-          //     autoDismiss: 0,
-          //     link: `https://sepolia.etherscan.io/tx/${transaction.hash}`
-          //   }
-          // }
-        },
         position: 'topRight'
       }
     },
@@ -457,8 +476,6 @@
     //   connectModal: '#sample-container-el',
     //   accountCenter: '#sample-container-el2'
     // },
-    // Sign up for your free api key at www.Blocknative.com
-    apiKey,
     theme: 'default'
   })
 
@@ -521,7 +538,7 @@
   }
 
   const sendTransactionWithPreFlight = async (provider, balance) => {
-    await onboard.setChain({ chainId: '0x5' })
+    await onboard.setChain({ chainId: '0xAA36A7' })
 
     const balanceValue = Object.values(balance)[0]
     // if using ethers v6 this is:
@@ -568,7 +585,7 @@
     await wagmiSignMessage(wagmiConfig, {
       message: signMsg,
       connector: wagmiConnector
-    })
+    }).then(console.log)
     // try {
     //   recoveredAddress = recoverAddress(
     //     arrayify(hashMessage(signMsg)),
@@ -599,7 +616,7 @@
   let typedMsg = JSON.stringify(
     {
       domain: {
-        chainId: '0x5',
+        chainId: '0xAA36A7',
         name: 'Web3-Onboard Test App',
         verifyingContract: '0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC',
         version: '1'
@@ -646,8 +663,9 @@
     undefined,
     2
   )
-  const signTypedMessage = async (provider, address) => {
-    await onboard.setChain({ chainId: '0x5' })
+  const signTypedMessage = async (connector, address) => {
+    await onboard.setChain({ chainId: '0xAA36A7' })
+    const provider = await connector.getProvider()
     const signature = await provider.request({
       method: 'eth_signTypedData_v4',
       params: [address, typedMsg]
@@ -758,7 +776,6 @@
       <button
         class="updateBalanceBtn"
         on:click={() => {
-          // Only necessary if a Blocknative API key is not provided and notify is disabled
           onboard.state.actions.updateBalances()
         }}>Update Wallet Balance</button
       >

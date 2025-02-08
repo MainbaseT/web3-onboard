@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    ProviderRpcErrorCode,
-    type WalletModule
-  } from '@web3-onboard/common'
+  import { ProviderRpcErrorCode, type WalletModule } from '@web3-onboard/common'
   import EventEmitter from 'eventemitter3'
   import { _ } from 'svelte-i18n'
   import en from '../../i18n/en.json'
@@ -29,7 +26,6 @@
   import SelectingWallet from './SelectingWallet.svelte'
   import Sidebar from './Sidebar.svelte'
   import { configuration } from '../../configuration.js'
-  import { getBNMulitChainSdk } from '../../services.js'
   import { MOBILE_WINDOW_WIDTH, STORAGE_KEYS } from '../../constants.js'
   import { defaultBnIcon } from '../../icons/index.js'
   import type { Config, Connector } from '@web3-onboard/wagmi'
@@ -211,11 +207,14 @@
     try {
       let address
       let wagmiConnector: Connector | undefined
-      
+
       if (wagmi) {
         const { buildWagmiConfig, wagmiConnect, getWagmiConnector } = wagmi
 
-        const wagmiConfig: Config = await buildWagmiConfig(chains, { label, provider })
+        const wagmiConfig: Config = await buildWagmiConfig(chains, {
+          label,
+          provider
+        })
         updateWagmiConfig(wagmiConfig)
         wagmiConnector = getWagmiConnector(label)
 
@@ -285,23 +284,10 @@
 
       const chain = await getChainId(provider)
 
-      if (state.get().notify.enabled) {
-        const sdk = await getBNMulitChainSdk()
-
-        if (sdk) {
-          try {
-            sdk.subscribe({
-              id: address,
-              chainId: chain,
-              type: 'account'
-            })
-          } catch (error) {
-            // unsupported network for transaction events
-          }
-        }
-      }
-
-      const update: Pick<WalletState, 'accounts' | 'chains' | 'wagmiConnector'> = {
+      const update: Pick<
+        WalletState,
+        'accounts' | 'chains' | 'wagmiConnector'
+      > = {
         accounts: [{ address, ens: null, uns: null, balance: null }],
         chains: [{ namespace: 'evm', id: chain }],
         wagmiConnector
@@ -618,8 +604,16 @@
               </div>
               <div class="mobile-subheader">
                 {$modalStep$ === 'selectingWallet'
-                  ? `${availableWallets} available wallets`
-                  : '1 account selected'}
+                  ? availableWallets > 1
+                    ? `${availableWallets} ${$_(
+                        'connect.selectingWallet.header'
+                      ).toLowerCase()}`
+                    : `1 ${$_(
+                        'connect.connectedWallet.availableWallet'
+                      ).toLowerCase()}`
+                  : `1 ${$_(
+                      'connect.connectedWallet.accountSelected'
+                    ).toLowerCase()}`}
               </div>
             </div>
           </div>
